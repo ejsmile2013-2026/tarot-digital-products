@@ -1,8 +1,8 @@
 export default function Guide() {
   const gold = "#C9A84C";
-  const darkBg = "#0A0817";
-  const cardBg = "#1C1640";
-  const borderGold = "1px solid rgba(201,168,76,0.45)";
+  const darkBg = "#080614";
+  const cardBg = "#2A1F52";
+  const borderGold = "1px solid rgba(201,168,76,0.6)";
 
   const spreads = [
     {
@@ -174,7 +174,7 @@ export default function Guide() {
             border: `1px solid ${spread.accentColor}99`,
             borderRadius: "20px",
             breakInside: "avoid",
-            boxShadow: `0 0 32px ${spread.accentColor}44, 0 0 8px ${spread.accentColor}22`,
+            boxShadow: `0 0 40px ${spread.accentColor}66, 0 4px 20px rgba(0,0,0,0.6)`,
           }}
         >
           {/* Spread Header */}
@@ -201,8 +201,8 @@ export default function Guide() {
                 key={card.num}
                 style={{
                   flex: "1 1 130px",
-                  background: `${spread.accentColor}18`,
-                  border: `1px solid ${spread.accentColor}44`,
+                  background: `${spread.accentColor}30`,
+                  border: `1px solid ${spread.accentColor}77`,
                   borderRadius: "12px",
                   padding: "16px 12px",
                   textAlign: "center",
