@@ -18,3 +18,8 @@
   .guide-print { padding: 0 !important; }
   body { background: white !important; color: black !important; }
 }
+
+@page {
+  margin: 0.8cm;
+  size: A4;
+}
