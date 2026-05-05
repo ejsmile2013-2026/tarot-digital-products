@@ -4,6 +4,21 @@ const gold = "#C9A84C";
 const darkBg = "#080614";
 const cardBg = "#1C1640";
 
+const RW = "https://commons.wikimedia.org/wiki/Special:FilePath/";
+const IMAGES: Record<number, string> = {
+  1:"RWS_Tarot_01_Magician.jpg", 2:"RWS_Tarot_02_High_Priestess.jpg",
+  3:"RWS_Tarot_03_Empress.jpg", 4:"RWS_Tarot_04_Emperor.jpg",
+  5:"RWS_Tarot_05_Hierophant.jpg", 6:"RWS_Tarot_06_Lovers.jpg",
+  7:"RWS_Tarot_07_Chariot.jpg", 8:"RWS_Tarot_08_Strength.jpg",
+  9:"RWS_Tarot_09_Hermit.jpg", 10:"RWS_Tarot_10_Wheel_of_Fortune.jpg",
+  11:"RWS_Tarot_11_Justice.jpg", 12:"RWS_Tarot_12_Hanged_Man.jpg",
+  13:"RWS_Tarot_13_Death.jpg", 14:"RWS_Tarot_14_Temperance.jpg",
+  15:"RWS_Tarot_15_Devil.jpg", 16:"RWS_Tarot_16_Tower.jpg",
+  17:"RWS_Tarot_17_Star.jpg", 18:"RWS_Tarot_18_Moon.jpg",
+  19:"RWS_Tarot_19_Sun.jpg", 20:"RWS_Tarot_20_Judgement.jpg",
+  21:"RWS_Tarot_21_World.jpg", 22:"RWS_Tarot_00_Fool.jpg",
+};
+
 interface Arcana {
   name: string; roman: string; emoji: string; symbol: string;
   keywords: string; color: string; gradient: string;
@@ -314,25 +329,25 @@ export default function Calculator() {
           <div style={{ animation: "fadeIn 0.5s ease" }}>
 
             {/* Card Visual */}
-            <div style={{ textAlign: "center", marginBottom: "24px" }}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "28px" }}>
               <div style={{
-                display: "inline-block",
-                width: "160px", height: "260px",
-                background: `linear-gradient(${arcana.gradient})`,
-                border: `2px solid rgba(201,168,76,0.6)`,
+                width: "160px",
+                border: `3px solid rgba(201,168,76,0.7)`,
                 borderRadius: "16px",
-                boxShadow: `0 0 60px ${arcana.color}66, 0 0 20px ${arcana.color}33`,
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between",
-                padding: "20px 16px",
-                position: "relative",
+                boxShadow: `0 0 60px ${arcana.color}77, 0 0 20px ${arcana.color}44`,
+                overflow: "hidden",
+                background: `linear-gradient(${arcana.gradient})`,
               }}>
-                <div style={{ fontSize: "11px", letterSpacing: "0.2em", color: "rgba(255,255,255,0.5)", fontFamily: "sans-serif" }}>{arcana.roman}</div>
-                <div>
-                  <div style={{ fontSize: "56px", marginBottom: "4px" }}>{arcana.emoji}</div>
-                  <div style={{ fontSize: "28px", color: "rgba(201,168,76,0.6)" }}>{arcana.symbol}</div>
-                </div>
-                <div style={{ fontSize: "10px", fontWeight: "700", color: "rgba(255,255,255,0.7)", letterSpacing: "0.1em", fontFamily: "sans-serif", textAlign: "center" }}>
-                  {arcana.name.toUpperCase()}
+                <img
+                  src={`${RW}${IMAGES[result!]}`}
+                  alt={arcana.name}
+                  style={{ width: "100%", display: "block", borderRadius: "13px" }}
+                  onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
+                <div style={{ textAlign: "center", padding: "10px 6px 12px", background: `linear-gradient(${arcana.gradient})` }}>
+                  <div style={{ fontSize: "9px", fontWeight: "700", color: gold, letterSpacing: "0.15em", fontFamily: "sans-serif" }}>
+                    {arcana.roman} · {arcana.name.toUpperCase()}
+                  </div>
                 </div>
               </div>
             </div>
