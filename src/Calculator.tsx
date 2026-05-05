@@ -4,7 +4,7 @@ const gold = "#C9A84C";
 const darkBg = "#080614";
 const cardBg = "#1C1640";
 
-const RW = "https://www.sacred-texts.com/tarot/rwt/img/";
+const RW = "/cards/";
 const IMAGES: Record<number, string> = {
   1:"ar01.jpg", 2:"ar02.jpg", 3:"ar03.jpg", 4:"ar04.jpg",
   5:"ar05.jpg", 6:"ar06.jpg", 7:"ar07.jpg", 8:"ar08.jpg",
