@@ -281,20 +281,45 @@ export default function Guide() {
           These spreads reveal the surface. A personal 1-on-1 reading goes to the root —
           your unique story, your soul's pattern, your specific path forward.
         </p>
-        <div
-          style={{
-            display: "inline-block",
-            padding: "12px 36px",
-            border: `1px solid ${gold}`,
-            borderRadius: "50px",
-            color: gold,
-            fontSize: "13px",
-            fontWeight: "600",
-            letterSpacing: "0.1em",
-            fontFamily: "sans-serif",
-          }}
-        >
-          BOOK A PERSONAL READING →
+        <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
+          <a
+            href="https://t.me/Ana_Krista"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "13px 28px",
+              background: "linear-gradient(135deg, #2AABEE, #229ED9)",
+              borderRadius: "50px",
+              color: "#fff",
+              fontSize: "13px",
+              fontWeight: "700",
+              letterSpacing: "0.08em",
+              fontFamily: "sans-serif",
+              textDecoration: "none",
+            }}
+          >
+            ✈ TELEGRAM @Ana_Krista
+          </a>
+          <a
+            href="https://wa.me/13177520369"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "13px 28px",
+              background: "linear-gradient(135deg, #25D366, #1DA851)",
+              borderRadius: "50px",
+              color: "#fff",
+              fontSize: "13px",
+              fontWeight: "700",
+              letterSpacing: "0.08em",
+              fontFamily: "sans-serif",
+              textDecoration: "none",
+            }}
+          >
+            💬 WHATSAPP +1 317 752 0369
+          </a>
         </div>
       </div>
 
