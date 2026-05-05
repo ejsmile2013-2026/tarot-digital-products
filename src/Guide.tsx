@@ -1,8 +1,8 @@
 export default function Guide() {
   const gold = "#C9A84C";
-  const darkBg = "#0D0B1E";
-  const cardBg = "#161130";
-  const borderGold = "1px solid rgba(201,168,76,0.35)";
+  const darkBg = "#0A0817";
+  const cardBg = "#1C1640";
+  const borderGold = "1px solid rgba(201,168,76,0.45)";
 
   const spreads = [
     {
@@ -171,9 +171,10 @@ export default function Guide() {
             marginBottom: "40px",
             padding: "32px",
             background: cardBg,
-            border: `1px solid ${spread.accentColor}55`,
+            border: `1px solid ${spread.accentColor}99`,
             borderRadius: "20px",
             breakInside: "avoid",
+            boxShadow: `0 0 32px ${spread.accentColor}44, 0 0 8px ${spread.accentColor}22`,
           }}
         >
           {/* Spread Header */}
