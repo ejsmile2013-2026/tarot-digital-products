@@ -322,9 +322,9 @@ export default function Calculator() {
                 border: `2px solid rgba(201,168,76,0.6)`,
                 borderRadius: "16px",
                 boxShadow: `0 0 60px ${arcana.color}66, 0 0 20px ${arcana.color}33`,
-                display: "flex" as const, flexDirection: "column" as const, alignItems: "center", justifyContent: "space-between",
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between",
                 padding: "20px 16px",
-                position: "relative" as const,
+                position: "relative",
               }}>
                 <div style={{ fontSize: "11px", letterSpacing: "0.2em", color: "rgba(255,255,255,0.5)", fontFamily: "sans-serif" }}>{arcana.roman}</div>
                 <div>
