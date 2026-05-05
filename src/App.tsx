@@ -7,6 +7,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { Sparkles, Book, Moon, Zap, Journal, Image as ImageIcon, Sticker, Calculator, Home, Volume2, ArrowRight } from "lucide-react";
 import Guide from "./Guide";
+import CalcPage from "./Calculator";
 
 const PRODUCTS = [
   {
@@ -103,6 +104,19 @@ const PRODUCTS = [
 
 export default function App() {
   const [showGuide, setShowGuide] = useState(false);
+  const [showCalc, setShowCalc] = useState(false);
+
+  if (showCalc) {
+    return (
+      <div className="min-h-screen" style={{ background: "#080614" }}>
+        <div className="no-print flex items-center gap-4 p-4 bg-purple-900 text-white">
+          <button onClick={() => setShowCalc(false)} className="text-sm underline">← Back</button>
+          <span className="text-sm font-medium">Personality Arcana Calculator</span>
+        </div>
+        <CalcPage />
+      </div>
+    );
+  }
 
   if (showGuide) {
     return (
@@ -190,6 +204,14 @@ export default function App() {
                     className="w-full text-[11px] font-semibold bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg transition-colors"
                   >
                     Preview Guide →
+                  </button>
+                )}
+                {product.id === 8 && (
+                  <button
+                    onClick={() => setShowCalc(true)}
+                    className="w-full text-[11px] font-semibold bg-violet-600 hover:bg-violet-500 text-white px-3 py-2 rounded-lg transition-colors"
+                  >
+                    Try Calculator →
                   </button>
                 )}
               </div>
