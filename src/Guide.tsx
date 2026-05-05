@@ -321,6 +321,18 @@ export default function Guide() {
             💬 WHATSAPP +1 317 752 0369
           </a>
         </div>
+
+        <div style={{ marginTop: "20px", borderTop: `1px solid rgba(201,168,76,0.2)`, paddingTop: "16px" }}>
+          <p style={{ fontSize: "11px", color: "rgba(232,224,240,0.4)", letterSpacing: "0.1em", marginBottom: "8px", fontFamily: "sans-serif" }}>
+            CONTACT DIRECTLY
+          </p>
+          <p style={{ fontSize: "13px", color: gold, letterSpacing: "0.05em", marginBottom: "4px" }}>
+            Telegram: t.me/Ana_Krista
+          </p>
+          <p style={{ fontSize: "13px", color: gold, letterSpacing: "0.05em" }}>
+            WhatsApp: +1 317 752 0369
+          </p>
+        </div>
       </div>
 
       {/* Footer */}
