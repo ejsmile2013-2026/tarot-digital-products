@@ -4,19 +4,14 @@ const gold = "#C9A84C";
 const darkBg = "#080614";
 const cardBg = "#1C1640";
 
-const RW = "https://commons.wikimedia.org/wiki/Special:FilePath/";
+const RW = "https://www.sacred-texts.com/tarot/rwt/img/";
 const IMAGES: Record<number, string> = {
-  1:"RWS_Tarot_01_Magician.jpg", 2:"RWS_Tarot_02_High_Priestess.jpg",
-  3:"RWS_Tarot_03_Empress.jpg", 4:"RWS_Tarot_04_Emperor.jpg",
-  5:"RWS_Tarot_05_Hierophant.jpg", 6:"RWS_Tarot_06_Lovers.jpg",
-  7:"RWS_Tarot_07_Chariot.jpg", 8:"RWS_Tarot_08_Strength.jpg",
-  9:"RWS_Tarot_09_Hermit.jpg", 10:"RWS_Tarot_10_Wheel_of_Fortune.jpg",
-  11:"RWS_Tarot_11_Justice.jpg", 12:"RWS_Tarot_12_Hanged_Man.jpg",
-  13:"RWS_Tarot_13_Death.jpg", 14:"RWS_Tarot_14_Temperance.jpg",
-  15:"RWS_Tarot_15_Devil.jpg", 16:"RWS_Tarot_16_Tower.jpg",
-  17:"RWS_Tarot_17_Star.jpg", 18:"RWS_Tarot_18_Moon.jpg",
-  19:"RWS_Tarot_19_Sun.jpg", 20:"RWS_Tarot_20_Judgement.jpg",
-  21:"RWS_Tarot_21_World.jpg", 22:"RWS_Tarot_00_Fool.jpg",
+  1:"ar01.jpg", 2:"ar02.jpg", 3:"ar03.jpg", 4:"ar04.jpg",
+  5:"ar05.jpg", 6:"ar06.jpg", 7:"ar07.jpg", 8:"ar08.jpg",
+  9:"ar09.jpg", 10:"ar10.jpg", 11:"ar11.jpg", 12:"ar12.jpg",
+  13:"ar13.jpg", 14:"ar14.jpg", 15:"ar15.jpg", 16:"ar16.jpg",
+  17:"ar17.jpg", 18:"ar18.jpg", 19:"ar19.jpg", 20:"ar20.jpg",
+  21:"ar21.jpg", 22:"ar00.jpg",
 };
 
 interface Arcana {
