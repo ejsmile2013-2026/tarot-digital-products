@@ -103,8 +103,19 @@ const PRODUCTS = [
 ];
 
 export default function App() {
+  const params = new URLSearchParams(window.location.search);
+  const directView = params.get("view");
+
   const [showGuide, setShowGuide] = useState(false);
   const [showCalc, setShowCalc] = useState(false);
+
+  if (directView === "calculator") {
+    return (
+      <div className="min-h-screen" style={{ background: "#080614" }}>
+        <CalcPage />
+      </div>
+    );
+  }
 
   if (showCalc) {
     return (
