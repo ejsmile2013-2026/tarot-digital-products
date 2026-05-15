@@ -1,3 +1,13 @@
+## Superpowers Skills
+
+- Новая фича / компонент / страница → `brainstorming` сначала
+- Баг → `systematic-debugging`
+- Написание кода → `test-driven-development`
+- Большая задача → `writing-plans` → `executing-plans`
+- Перед деплоем / мёржем → `verification-before-completion`
+
+---
+
 # CLAUDE.md — Правила работы с проектом Tarot Digital Products
 
 ## Главное правило
