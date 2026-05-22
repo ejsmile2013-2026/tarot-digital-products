@@ -262,13 +262,12 @@ function _htmlHome() {
         <p class="profile__stats">${ANA.stats}</p>
         <p class="profile__bio">${ANA.bio}</p>
         <div class="profile__actions">
-          <button class="action-btn" id="js-whatsapp-btn">
-            WhatsApp
-          </button>
-          <button class="action-btn" id="js-write-btn">
-            ✉ Написать
-          </button>
+          <button class="action-btn" id="js-whatsapp-btn">WhatsApp</button>
+          <button class="action-btn" id="js-write-btn">✉ Написать</button>
         </div>
+        <button class="share-btn" id="js-share-btn">
+          🔗 Поделиться с другом
+        </button>
       </div>
 
       <!-- Портфолио — сетка 3 колонки -->
@@ -431,13 +430,13 @@ function _htmlBooking() {
 function _htmlConfirmation() {
   const s = _curService;
   return `
-    <div class="confirm-screen" style="align-items:flex-start;padding:0;">
+    <div class="confirm-screen">
 
       <button id="js-back-btn" class="nav-back" aria-label="Назад">
         <span class="nav-back__arrow">‹</span> Назад
       </button>
 
-      <div class="confirm-body" style="padding-top:24px;">
+      <div class="confirm-body">
 
         <div class="success-icon" aria-hidden="true">✨</div>
 
@@ -502,6 +501,19 @@ function _evHome(el) {
   el.querySelector('#js-whatsapp-btn')?.addEventListener('click', () => {
     TG.haptic.light();
     window.open(ANA.whatsapp, '_blank');
+  });
+
+  /* Кнопка «Поделиться с другом» */
+  el.querySelector('#js-share-btn')?.addEventListener('click', () => {
+    TG.haptic.light();
+    const shareUrl = 'https://t.me/AnaKristaTaro_Bot/taro';
+    const text = encodeURIComponent('Нашла классного таролога — Ana Krista Goyya. Здесь можно записаться на расклад 🔮');
+    if (_sdk?.shareToStory) {
+      /* Telegram Share */
+      _sdk.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${text}`);
+    } else {
+      window.open(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${text}`, '_blank');
+    }
   });
 
   /* Кнопка «Написать» — открыть Telegram */
@@ -594,7 +606,7 @@ function _evBooking(el) {
   htmlBtn?.addEventListener('click', _submitBooking);
 }
 
-function _submitBooking() {
+async function _submitBooking() {
   const textarea = document.querySelector('#js-question');
   const question = textarea?.value.trim();
   if (!question) return;
@@ -602,15 +614,28 @@ function _submitBooking() {
   TG.mb.loading(true);
   TG.haptic.medium();
 
-  /* Отправить структурированные данные боту (если в Telegram) */
-  TG.sendData({
-    service:  _curService?.id,
-    question,
-    date:     _selDate,
-    userName: TG.user?.first_name || null,
-  });
+  /* Отправить данные на webhook — бот пришлёт уведомление Ане и подтверждение клиенту */
+  try {
+    await fetch('/api/webhook', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type:         'booking',
+        userId:       TG.user?.id       || null,
+        userName:     TG.user?.first_name || null,
+        serviceId:    _curService?.id,
+        serviceTitle: _curService?.title,
+        question,
+        date: _selDate,
+      }),
+    });
+  } catch (e) {
+    /* Не блокируем флоу если сеть недоступна */
+    console.warn('Booking send error:', e);
+  }
 
-  /* Перейти на экран подтверждения */
+  /* Показать экран подтверждения */
+  TG.mb.loading(false);
   navigate('confirmation');
 }
 
@@ -634,12 +659,113 @@ function _evConfirmation(el) {
 }
 
 /* =====================================================
-   5. ЗАПУСК
+   5. ОФФЕР-МОДАЛКА (показывается один раз)
+   ===================================================== */
+
+const ONBOARD_KEY = 'ana_onboard_shown';
+const OFFER_KEY   = 'ana_offer_shown';
+
+/* ---- Онбординг (первое открытие) ---- */
+function showOnboarding() {
+  if (localStorage.getItem(ONBOARD_KEY)) return;
+
+  const user = TG.user;
+  const name = user?.first_name ? `, ${user.first_name}` : '';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'offer-overlay';
+  overlay.innerHTML = `
+    <div class="offer-card onboard-card">
+      <div class="offer-emoji">🔮</div>
+      <h2 class="offer-title">Привет${name}!</h2>
+      <p class="offer-sub">Я помогу тебе найти ясность там, где кажется, что выхода нет</p>
+      <ul class="offer-bullets">
+        <li>Записаться на личный расклад к Ане</li>
+        <li>Купить материалы для самостоятельной работы</li>
+        <li>Получить ответ на один важный вопрос</li>
+      </ul>
+      <button class="offer-btn" id="js-onboard-start">Начать →</button>
+    </div>
+  `;
+
+  document.getElementById('app').appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('offer-overlay--visible'));
+
+  overlay.querySelector('#js-onboard-start').addEventListener('click', () => {
+    TG.haptic.medium();
+    localStorage.setItem(ONBOARD_KEY, '1');
+    overlay.classList.remove('offer-overlay--visible');
+    setTimeout(() => {
+      overlay.remove();
+      /* После онбординга показать оффер */
+      setTimeout(showOffer, 600);
+    }, 300);
+  });
+}
+
+function showOffer() {
+  /* Уже видели — не показывать */
+  if (localStorage.getItem(OFFER_KEY)) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'offer-overlay';
+  overlay.innerHTML = `
+    <div class="offer-card">
+      <div class="offer-emoji">🎁</div>
+      <h2 class="offer-title">Скидка 15% на первую запись</h2>
+      <p class="offer-sub">Подпишитесь на бота — получите промокод в личное сообщение</p>
+      <ul class="offer-bullets">
+        <li>Напомним о записи за день</li>
+        <li>Первыми узнаёте о свободных окошках</li>
+        <li>Эксклюзивные акции для подписчиков</li>
+      </ul>
+      <button class="offer-btn" id="js-offer-accept">Получить скидку 15%</button>
+      <button class="offer-skip" id="js-offer-skip">Пропустить</button>
+    </div>
+  `;
+
+  document.getElementById('app').appendChild(overlay);
+
+  /* Анимация появления */
+  requestAnimationFrame(() => overlay.classList.add('offer-overlay--visible'));
+
+  function closeOffer() {
+    localStorage.setItem(OFFER_KEY, '1');
+    overlay.classList.remove('offer-overlay--visible');
+    setTimeout(() => overlay.remove(), 300);
+  }
+
+  /* Кнопка «Получить скидку» — открыть бота */
+  overlay.querySelector('#js-offer-accept').addEventListener('click', () => {
+    TG.haptic.medium();
+    closeOffer();
+    const url = 'https://t.me/AnaKristaTaro_Bot?start=from_app';
+    if (_sdk) _sdk.openTelegramLink(url);
+    else window.open(url, '_blank');
+  });
+
+  /* Кнопка «Пропустить» */
+  overlay.querySelector('#js-offer-skip').addEventListener('click', () => {
+    TG.haptic.light();
+    closeOffer();
+  });
+}
+
+/* =====================================================
+   6. ЗАПУСК
    ===================================================== */
 
 function init() {
   TG.init();
   navigate('home');
+  /* Онбординг при первом открытии, затем оффер */
+  setTimeout(() => {
+    if (!localStorage.getItem(ONBOARD_KEY)) {
+      showOnboarding();
+    } else {
+      showOffer();
+    }
+  }, 1000);
 }
 
 /* Запускаем после загрузки DOM */
