@@ -1,0 +1,769 @@
+/* =====================================================
+   TELEGRAM MINI APP — Ana Krista · Таро
+   Стили полностью адаптируются к теме Telegram
+   (светлая / тёмная) через CSS-переменные.
+   ===================================================== */
+
+/* === CSS-переменные из темы Telegram с fallback === */
+:root {
+  /* Telegram инжектирует эти переменные автоматически */
+  --bg:        var(--tg-theme-bg-color,             #ffffff);
+  --bg2:       var(--tg-theme-secondary-bg-color,   #f4f4f5);
+  --text:      var(--tg-theme-text-color,            #000000);
+  --hint:      var(--tg-theme-hint-color,            #707579);
+  --accent:    var(--tg-theme-button-color,          #2aabee);
+  --accent-fg: var(--tg-theme-button-text-color,     #ffffff);
+  --link:      var(--tg-theme-link-color,            #168acd);
+
+  /* Радиусы */
+  --r-sm:  8px;
+  --r-md:  12px;
+  --r-lg:  16px;
+  --r-xl:  20px;
+  --r-full: 9999px;
+
+  /* Типографика */
+  --fs-xs:  12px;
+  --fs-sm:  13px;
+  --fs-md:  15px;
+  --fs-lg:  17px;
+  --fs-xl:  22px;
+  --fs-2xl: 28px;
+
+  /* Тени */
+  --shadow-sm: 0 1px 4px rgba(0,0,0,.08);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.12);
+
+  /* Тайминг переходов */
+  --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+  --duration: 240ms;
+}
+
+/* === Сброс === */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  /* Убираем голубую подсветку при тапе на мобиле */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* === База === */
+html {
+  height: 100%;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-size-adjust: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Roboto, sans-serif;
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+
+  /* ===== ФОНОВАЯ КАРТИНКА ===== */
+  background-color: #08051a;
+  background-image: url('../img/bg_mini_app1.png?v=2');
+  background-size: cover;
+  background-position: center top;
+  background-attachment: fixed;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+  line-height: inherit;
+}
+
+textarea, input {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* =====================================================
+   КОНТЕЙНЕР ПРИЛОЖЕНИЯ
+   Ограничен шириной мобильного экрана — это Mini App,
+   не сайт. На десктопе отображается как телефон по центру.
+   ===================================================== */
+#app {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: transparent; /* звёзды просвечивают */
+  max-width: 430px;
+  margin: 0 auto;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.04);
+}
+
+/* =====================================================
+   ЭКРАНЫ — базовые стили и анимации переходов
+   ===================================================== */
+.screen {
+  min-height: 100vh;
+  width: 100%;
+  background: transparent; /* звёзды просвечивают */
+  will-change: transform, opacity;
+  overflow-x: hidden;
+}
+
+/* --- Кнопка «Назад» — базовый стиль (нормальный поток) --- */
+.nav-back {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 16px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--accent);
+  min-height: 44px;
+}
+
+.nav-back:active {
+  opacity: 0.65;
+}
+
+.nav-back__arrow {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* На экране деталей — поверх фото, белая таблетка */
+.detail-screen .nav-back {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 20;
+  padding: 6px 14px 6px 10px;
+  color: #222;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--r-full);
+  min-height: 34px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.18);
+}
+
+/* Скрываем HTML-кнопку когда Telegram BackButton активен */
+.nav-back.hidden {
+  display: none;
+}
+
+/* Экран, выезжающий со стека (уходит влево) */
+.screen--exit {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* =====================================================
+   ГЛАВНАЯ КНОПКА — HTML fallback (видима без Telegram)
+   В Telegram скрывается, используется MainButton SDK
+   ===================================================== */
+.main-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
+  padding: 14px 24px;
+  border-radius: var(--r-lg);
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: transform 0.1s, opacity 0.1s;
+  /* Минимум 44px обеспечен через min-height */
+}
+
+.main-btn:active {
+  transform: scale(0.97);
+  opacity: 0.88;
+}
+
+.main-btn:disabled,
+.main-btn--disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* В Telegram кнопка скрывается через JS */
+.main-btn.hidden {
+  display: none;
+}
+
+/* =====================================================
+   ЭКРАН 1 — ГЛАВНЫЙ (Каталог)
+   ===================================================== */
+.home-screen {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 32px;
+}
+
+/* --- Профиль мастера (центрированный) --- */
+.profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 16px 20px;
+  gap: 6px;
+  text-align: center;
+  /* Текст белый — профиль на звёздном фоне */
+  color: #f1f5f9;
+}
+
+.profile__avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.5px;
+  flex-shrink: 0;
+  margin-bottom: 4px;
+  overflow: hidden;
+}
+
+.profile__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.profile__name {
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  line-height: 1.2;
+  color: #ffffff;
+}
+
+.profile__meta {
+  font-size: var(--fs-sm);
+  color: rgba(255,255,255,0.65);
+}
+
+.profile__link {
+  font-size: var(--fs-sm);
+  color: #7dd3fc;
+  text-decoration: none;
+}
+
+.profile__stats {
+  font-size: var(--fs-sm);
+  color: rgba(255,255,255,0.55);
+}
+
+.profile__bio {
+  font-size: var(--fs-sm);
+  color: rgba(255,255,255,0.6);
+  line-height: 1.6;
+  text-align: center;
+  padding: 0 8px;
+  margin-top: 2px;
+}
+
+/* --- Кнопки действий (Написать и т.д.) --- */
+.profile__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  border-radius: var(--r-md);
+  background: rgba(255,255,255,0.09); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,0.12);
+  color: var(--accent);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  transition: opacity 0.1s, transform 0.1s;
+}
+
+.action-btn:active {
+  opacity: 0.7;
+  transform: scale(0.97);
+}
+
+/* --- Заголовок секции --- */
+.home-section {
+  margin-top: 8px;
+}
+
+.home-section__title {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  padding: 0 16px 10px;
+}
+
+/* --- Портфолио — сетка 3 колонки --- */
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  padding: 0 16px;
+}
+
+.portfolio-card {
+  aspect-ratio: 1;
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s, opacity 0.15s;
+}
+
+.portfolio-card:active {
+  transform: scale(0.94);
+  opacity: 0.85;
+}
+
+.portfolio-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--r-md);
+  display: block;
+}
+
+
+/* --- Список услуг (строками) --- */
+.services-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 16px;
+}
+
+.service-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: rgba(255,255,255,0.09); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,0.12);
+  cursor: pointer;
+  transition: opacity 0.12s, transform 0.12s;
+  min-height: 64px;
+  text-align: left;
+  width: 100%;
+}
+
+.service-row:active {
+  opacity: 0.75;
+  transform: scale(0.985);
+}
+
+.service-row__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.service-row__icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.service-row__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.service-row__name {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  line-height: 1.25;
+  color: #f1f5f9;
+}
+
+.service-row__sub {
+  font-size: var(--fs-xs);
+  color: rgba(255,255,255,0.55);
+  margin-top: 2px;
+}
+
+.service-row__price {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: #7dd3fc;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* --- Пустое состояние --- */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 56px 24px;
+  gap: 10px;
+  color: var(--hint);
+}
+
+.empty__icon { font-size: 44px; }
+.empty__text { font-size: var(--fs-sm); }
+
+/* =====================================================
+   ЭКРАН 2 — ДЕТАЛИ УСЛУГИ
+   ===================================================== */
+.detail-screen {
+  padding-bottom: 100px;
+  position: relative; /* нужно для абсолютной кнопки «Назад» */
+}
+
+/* --- Иллюстрация --- */
+.detail-hero {
+  width: 100%;
+  height: 240px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.detail-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* --- Контент деталей — тёмная панель поверх фонового изображения --- */
+.detail-body {
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: rgba(8, 5, 26, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  position: relative;
+  z-index: 1;
+}
+
+.detail-title {
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  line-height: 1.2;
+  color: #ffffff;
+}
+
+.detail-sub {
+  font-size: var(--fs-sm);
+  color: rgba(255,255,255,0.55);
+  margin-top: 4px;
+}
+
+.detail-desc {
+  font-size: var(--fs-md);
+  line-height: 1.65;
+  color: rgba(255,255,255,0.88);
+}
+
+/* --- Лейбл секции --- */
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 10px;
+}
+
+/* --- Что ты получишь --- */
+.includes {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.includes li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: var(--fs-md);
+  color: rgba(255,255,255,0.9);
+}
+
+.includes__check {
+  color: #7dd3fc;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+  line-height: 1.5;
+}
+
+/* --- Отзыв --- */
+.testimonial {
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+}
+
+.testimonial__quote {
+  font-style: italic;
+  font-size: var(--fs-sm);
+  line-height: 1.65;
+  color: rgba(255,255,255,0.85);
+}
+
+.testimonial__author {
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  margin-top: 6px;
+}
+
+/* --- Блок цены --- */
+.price-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(255,255,255,0.09); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+}
+
+.price-row__label {
+  font-size: var(--fs-sm);
+  color: rgba(255,255,255,0.5);
+}
+
+.price-row__value {
+  font-size: var(--fs-2xl);
+  font-weight: 800;
+  color: var(--accent);
+}
+
+/* =====================================================
+   ЭКРАН 3 — ФОРМА ЗАПИСИ
+   ===================================================== */
+.booking-screen {
+  padding-bottom: 100px;
+}
+
+.booking-body {
+  padding: 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Хлебная крошка */
+.breadcrumb {
+  font-size: var(--fs-sm);
+  color: rgba(255,255,255,0.55);
+}
+
+/* --- Поля формы --- */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field__label {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: rgba(255,255,255,0.75);
+}
+
+/* Поле с авто-заполнением (read-only) */
+.field__readonly {
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: var(--r-md);
+  font-size: var(--fs-md);
+  color: #ffffff;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+/* Textarea */
+.field__textarea {
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.15);
+  border: 2px solid rgba(255,255,255,0.18);
+  border-radius: var(--r-md);
+  font-size: var(--fs-md);
+  color: #ffffff;
+  resize: none;
+  outline: none;
+  transition: border-color 0.15s;
+  min-height: 108px;
+  line-height: 1.55;
+}
+
+.field__textarea:focus {
+  border-color: var(--accent);
+}
+
+.field__textarea::placeholder {
+  color: rgba(255,255,255,0.4);
+}
+
+/* --- Выбор даты --- */
+.date-picker {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+  /* Снэп для удобной прокрутки */
+  scroll-snap-type: x mandatory;
+}
+
+.date-picker::-webkit-scrollbar { display: none; }
+
+.date-btn {
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  min-height: 68px;
+  border-radius: var(--r-md);
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.9);
+  gap: 2px;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+}
+
+.date-btn:active { transform: scale(0.92); }
+
+.date-btn.active {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.date-btn__day  { font-size: 11px; font-weight: 500; }
+.date-btn__num  { font-size: 20px; font-weight: 700; line-height: 1; }
+.date-btn__mon  { font-size: 11px; }
+
+/* Подсказка */
+.form-note {
+  font-size: var(--fs-sm);
+  color: rgba(255,255,255,0.5);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* =====================================================
+   ЭКРАН 4 — ПОДТВЕРЖДЕНИЕ
+   ===================================================== */
+.confirm-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px 100px;
+}
+
+.confirm-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+/* Анимированный эмодзи успеха */
+.success-icon {
+  font-size: 64px;
+  animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes pop {
+  from { transform: scale(0.2); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.confirm-title {
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  color: #ffffff;
+  animation: rise 0.4s ease 0.12s both;
+}
+
+.confirm-service {
+  font-size: var(--fs-sm);
+  color: rgba(255,255,255,0.6);
+  animation: rise 0.4s ease 0.22s both;
+}
+
+.next-steps {
+  width: 100%;
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: var(--r-lg);
+  padding: 16px;
+  text-align: left;
+  animation: rise 0.4s ease 0.32s both;
+}
+
+/* Лейбл «ЧТО ПРОИСХОДИТ ДАЛЬШЕ» внутри next-steps */
+.next-steps .section-label {
+  color: rgba(255,255,255,0.6);
+}
+
+.next-steps__text {
+  font-size: var(--fs-md);
+  line-height: 1.65;
+  color: rgba(255,255,255,0.92);
+  margin-top: 8px;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* =====================================================
+   УТИЛИТЫ
+   ===================================================== */
+.mt-auto { margin-top: auto; }
