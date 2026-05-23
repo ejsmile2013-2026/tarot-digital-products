@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   // Профиль мастера
   const { data: master, error: masterErr } = await supabase
     .from('masters')
-    .select('id, slug, name, bio, meta, stats, avatar_url, bg_url, channel_url, whatsapp, accent_color, plan')
+    .select('id, slug, name, bio, meta, stats, avatar_url, bg_url, channel_url, whatsapp, accent_color, plan, telegram_id')
     .eq('slug', slug)
     .single();
 

@@ -1,5 +1,6 @@
-// GET /api/master/bookings  — заявки текущего мастера
-// PUT /api/master/bookings  — обновить статус заявки (тело: { id, status })
+// GET    /api/master/bookings  — заявки текущего мастера
+// PUT    /api/master/bookings  — обновить статус заявки (тело: { id, status })
+// DELETE /api/master/bookings  — удалить заявку (тело: { id })
 
 import { supabase, setCors } from '../_lib/supabase.js';
 import { requireMaster } from '../_lib/auth.js';
@@ -69,6 +70,27 @@ export default async function handler(req, res) {
     if (error) return res.status(500).json({ error: 'Ошибка обновления заявки' });
 
     return res.status(200).json({ booking: data });
+  }
+
+  // ── DELETE: удалить заявку ───────────────────────────────
+  if (req.method === 'DELETE') {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ error: 'id обязателен' });
+
+    const { data: booking } = await supabase
+      .from('bookings')
+      .select('id, master_id')
+      .eq('id', id)
+      .single();
+
+    if (!booking || booking.master_id !== master.id) {
+      return res.status(404).json({ error: 'Заявка не найдена' });
+    }
+
+    const { error } = await supabase.from('bookings').delete().eq('id', id);
+    if (error) return res.status(500).json({ error: 'Ошибка удаления заявки' });
+
+    return res.status(200).json({ ok: true });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });

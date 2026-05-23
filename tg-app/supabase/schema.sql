@@ -85,6 +85,17 @@ create table if not exists subscriptions (
 );
 
 -- ============================================================
+-- СЕССИИ ОНБОРДИНГА МАСТЕРОВ
+-- Состояние диалога хранится в БД (Vercel serverless — stateless)
+-- ============================================================
+create table if not exists onboarding_sessions (
+  telegram_id   bigint primary key,
+  step          text not null default 'name', -- 'name' | 'bio' | 'niche'
+  data          jsonb not null default '{}'::jsonb,
+  created_at    timestamptz default now()
+);
+
+-- ============================================================
 -- ИНДЕКСЫ — для быстрых запросов
 -- ============================================================
 create index if not exists idx_services_master    on services(master_id) where is_active = true;

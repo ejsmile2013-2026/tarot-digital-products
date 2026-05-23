@@ -21,6 +21,16 @@ const _sdk = window.Telegram?.WebApp || null;
    он непустой только когда приложение открыто из Telegram. */
 const IN_TG = !!_sdk?.initData;
 
+/* Проверить: текущий пользователь Telegram — мастер этой страницы */
+function checkIsMaster() {
+  return !!(
+    IN_TG &&
+    TG.user?.id &&
+    window._masterData?.telegram_id &&
+    String(TG.user.id) === String(window._masterData.telegram_id)
+  );
+}
+
 const TG = {
   /* Инициализировать SDK */
   init() {
@@ -138,7 +148,7 @@ let _activeTab  = 'catalog'; // Активная вкладка нижнего �
 let _homeFilter = 'all';   // Фильтр для home ('all'|'readings'|'materials')
 
 /* Экраны где видно нижнее меню */
-const TAB_SCREENS = ['home', 'contact'];
+const TAB_SCREENS = ['home', 'contact', 'master'];
 
 /* Категория по вкладке */
 const TAB_FILTER = {
@@ -167,12 +177,11 @@ function navigate(name, service) {
   _navStack.push(name);
   _transition(name, 'forward');
 
-  /* Нижнее меню видно только на корневых вкладках */
+  /* Нижнее меню всегда видно */
+  showNav();
   if (TAB_SCREENS.includes(name)) {
-    showNav();
     TG.bb.hide();
   } else {
-    hideNav();
     TG.bb.show(_goBack);
   }
 }
@@ -185,6 +194,9 @@ function switchTab(tab) {
   if (tab === 'contact') {
     _navStack = ['contact'];
     _transition('contact', 'fade');
+  } else if (tab === 'master') {
+    _navStack = ['master'];
+    _transition('master', 'fade');
   } else {
     _homeFilter = TAB_FILTER[tab] || 'all';
     _navStack = ['home'];
@@ -300,6 +312,7 @@ function _buildScreen(name) {
     case 'booking':      el.innerHTML = _htmlBooking();       break;
     case 'confirmation': el.innerHTML = _htmlConfirmation();  break;
     case 'contact':      el.innerHTML = _htmlContact();       break;
+    case 'master':       el.innerHTML = _htmlMasterPanel();   break;
     default:
       el.innerHTML = `<p style="padding:24px;color:var(--hint)">Неизвестный экран</p>`;
   }
@@ -313,7 +326,7 @@ function _buildScreen(name) {
 /* ---- Экран 1: Главный ---- */
 function _htmlHome() {
   /* Аватар: фото или инициалы */
-  const avatarInner = ANA.avatar.startsWith('img/')
+  const avatarInner = (ANA.avatar.startsWith('img/') || ANA.avatar.startsWith('http'))
     ? `<img src="${ANA.avatar}" alt="${ANA.name}">`
     : ANA.initials;
 
@@ -343,7 +356,10 @@ function _htmlHome() {
         <div class="portfolio-grid" id="js-portfolio">
           ${filterServices(_homeFilter).map(s => `
             <button class="portfolio-card" data-id="${s.id}" aria-label="${s.title}">
-              <img src="${s.image}" alt="${s.title}" loading="lazy">
+              ${s.image
+                ? `<img src="${s.image}" alt="${s.title}" loading="lazy">`
+                : `<div class="portfolio-card__gradient" style="background:${s.gradient}"><span class="portfolio-card__emoji">${s.emoji}</span></div>`
+              }
             </button>
           `).join('')}
         </div>
@@ -355,7 +371,7 @@ function _htmlHome() {
         <div class="services-list" id="js-services-list">
           ${filterServices(_homeFilter).map(s => `
             <button class="service-row" data-id="${s.id}" aria-label="${s.title}">
-              <div class="service-row__icon"><img src="${s.icon}" alt="${s.title}"></div>
+              <div class="service-row__icon">${s.image ? `<img src="${s.image}" alt="${s.title}">` : `<span style="font-size:28px;line-height:1">${s.emoji}</span>`}</div>
               <div class="service-row__info">
                 <p class="service-row__name">${s.title}</p>
                 <p class="service-row__sub">${s.subtitle}</p>
@@ -425,8 +441,8 @@ function _htmlDetail() {
           <span class="price-row__value">${fmtPrice(s.price)}</span>
         </div>
 
-        <!-- HTML fallback -->
-        <button class="main-btn" id="js-main-btn" aria-label="${btnLabel}">${btnLabel}</button>
+        <!-- HTML fallback (скрыта в Telegram) -->
+        <button class="main-btn" id="js-main-btn" style="display:none" aria-label="${btnLabel}">${btnLabel}</button>
       </div>
     </div>
   `;
@@ -484,8 +500,8 @@ function _htmlBooking() {
 
         <p class="form-note">Ана свяжется с тобой для подтверждения времени</p>
 
-        <!-- HTML fallback (disabled пока нет текста) -->
-        <button class="main-btn main-btn--disabled" id="js-main-btn" disabled aria-label="Отправить">
+        <!-- HTML fallback (скрыта в Telegram) -->
+        <button class="main-btn main-btn--disabled" id="js-main-btn" style="display:none" disabled aria-label="Отправить">
           Отправить
         </button>
       </div>
@@ -569,8 +585,8 @@ function _htmlConfirmation() {
           </p>
         </div>
 
-        <!-- HTML fallback -->
-        <button class="main-btn" id="js-main-btn" aria-label="Вернуться в каталог">
+        <!-- HTML fallback (скрыта в Telegram, показана только в браузере) -->
+        <button class="confirm-back-btn" id="js-main-btn" style="display:none" aria-label="Вернуться в каталог">
           Вернуться в каталог
         </button>
       </div>
@@ -589,6 +605,7 @@ function _attachEvents(el, name) {
     case 'booking':      _evBooking(el);      break;
     case 'confirmation': _evConfirmation(el); break;
     case 'contact':      _evContact(el);      break;
+    case 'master':       _evMasterPanel(el);  break;
   }
 }
 
@@ -682,10 +699,14 @@ function _evDetail(el) {
     navigate(s.type === 'consultation' ? 'booking' : 'confirmation');
   };
 
-  TG.mb.show(btn, handler);
+  TG.mb.hide(); // не перекрываем нижнее меню
 
-  /* HTML fallback */
-  el.querySelector('#js-main-btn')?.addEventListener('click', handler);
+  const htmlBtn = el.querySelector('#js-main-btn');
+  if (htmlBtn) {
+    htmlBtn.style.display = 'flex';
+    htmlBtn.textContent   = btn;
+    htmlBtn.onclick       = handler;
+  }
 }
 
 /* ---- Форма записи ---- */
@@ -698,13 +719,19 @@ function _evBooking(el) {
   const datesEl  = el.querySelector('#js-dates');
   const htmlBtn  = el.querySelector('#js-main-btn');
 
-  /* Изначально кнопка неактивна */
-  TG.mb.show('Отправить', _submitBooking, true);
+  TG.mb.hide(); // не перекрываем нижнее меню
 
-  /* Включить кнопку когда есть текст */
+  /* Показать HTML кнопку внутри экрана, изначально неактивна */
+  if (htmlBtn) {
+    htmlBtn.style.display = 'flex';
+    htmlBtn.disabled      = true;
+    htmlBtn.classList.add('main-btn--disabled');
+    htmlBtn.addEventListener('click', _submitBooking);
+  }
+
+  /* Включить кнопку когда есть текст ≥ 20 символов */
   textarea?.addEventListener('input', () => {
-    const ok = textarea.value.trim().length > 0;
-    TG.mb.setEnabled(ok);
+    const ok = textarea.value.trim().length >= 20;
     if (htmlBtn) {
       htmlBtn.disabled = !ok;
       htmlBtn.classList.toggle('main-btn--disabled', !ok);
@@ -720,22 +747,19 @@ function _evBooking(el) {
     _selDate = btn.dataset.date;
     TG.haptic.select();
   });
-
-  /* HTML fallback */
-  htmlBtn?.addEventListener('click', _submitBooking);
 }
 
 async function _submitBooking() {
   const textarea = document.querySelector('#js-question');
   const question = textarea?.value.trim();
-  if (!question) return;
+  if (!question || question.length < 20) return;
 
-  TG.mb.loading(true);
+  const htmlBtn = document.querySelector('#js-main-btn');
+  if (htmlBtn) { htmlBtn.disabled = true; htmlBtn.textContent = '...'; }
   TG.haptic.medium();
 
-  /* Отправить заявку в API (сохраняет в БД + уведомления) */
   try {
-    await fetch('/api/bookings', {
+    const res = await fetch('/api/bookings', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -748,12 +772,16 @@ async function _submitBooking() {
         preferredDate: _selDate,
       }),
     });
+
+    if (!res.ok) throw new Error('server error');
   } catch (e) {
     console.warn('Booking send error:', e);
+    if (htmlBtn) { htmlBtn.disabled = false; htmlBtn.textContent = 'Отправить'; }
+    if (_sdk) _sdk.showAlert('Не удалось отправить заявку. Попробуй ещё раз или напиши мастеру напрямую.');
+    else alert('Не удалось отправить заявку. Попробуй ещё раз.');
+    return;
   }
 
-  /* Показать экран подтверждения */
-  TG.mb.loading(false);
   navigate('confirmation');
 }
 
@@ -772,12 +800,609 @@ function _evConfirmation(el) {
     navigate('home');
   };
 
-  TG.mb.show('Вернуться в каталог', handler);
-  el.querySelector('#js-main-btn')?.addEventListener('click', handler);
+  TG.mb.hide(); // не перекрываем нижнее меню
+
+  const htmlBtn = el.querySelector('#js-main-btn');
+  if (htmlBtn) {
+    htmlBtn.style.display = 'flex';
+    htmlBtn.onclick       = handler;
+  }
 }
 
 /* =====================================================
-   5. ОФФЕР-МОДАЛКА (показывается один раз)
+   5. ПАНЕЛЬ МАСТЕРА
+   ===================================================== */
+
+/* Заголовок авторизации для запросов мастера */
+function _masterAuthHeader() {
+  return { 'Authorization': `tma ${_sdk?.initData || ''}` };
+}
+
+/* ---- Главный экран панели мастера ---- */
+function _htmlMasterPanel() {
+  return `
+    <div class="master-panel">
+      <div class="master-panel__header">
+        <h2 class="master-panel__title">Панель мастера</h2>
+        <p class="master-panel__sub">${window._masterData?.name || ''}</p>
+      </div>
+
+      <div class="master-tabs" id="js-master-tabs" role="tablist">
+        <button class="master-tab active" data-mtab="bookings" role="tab" aria-selected="true">Заявки</button>
+        <button class="master-tab" data-mtab="services" role="tab" aria-selected="false">Услуги</button>
+        <button class="master-tab" data-mtab="profile" role="tab" aria-selected="false">Профиль</button>
+      </div>
+
+      <div class="master-content" id="js-master-content">
+        <div class="master-loading">Загрузка...</div>
+      </div>
+    </div>
+  `;
+}
+
+/* ---- Обработчики панели мастера ---- */
+function _evMasterPanel(el) {
+  TG.mb.hide();
+
+  const tabsEl   = el.querySelector('#js-master-tabs');
+  const contentEl = el.querySelector('#js-master-content');
+
+  /* Переключение внутренних вкладок */
+  tabsEl?.addEventListener('click', e => {
+    const btn = e.target.closest('.master-tab');
+    if (!btn) return;
+    const mtab = btn.dataset.mtab;
+    tabsEl.querySelectorAll('.master-tab').forEach(b => {
+      b.classList.toggle('active', b === btn);
+      b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+    });
+    TG.haptic.select();
+    _renderMasterTab(contentEl, mtab);
+  });
+
+  /* По умолчанию — загрузить заявки */
+  _renderMasterTab(contentEl, 'bookings');
+}
+
+/* Рендер содержимого вкладки мастера */
+async function _renderMasterTab(container, tab) {
+  container.innerHTML = '<div class="master-loading">Загрузка...</div>';
+  try {
+    if (tab === 'bookings') {
+      container.innerHTML = await _htmlMasterBookings();
+      _attachMasterBookingEvents(container);
+    } else if (tab === 'services') {
+      container.innerHTML = await _htmlMasterServices();
+      _attachMasterServiceEvents(container);
+    } else if (tab === 'profile') {
+      container.innerHTML = _htmlMasterProfile();
+      _attachMasterProfileEvents(container);
+    }
+  } catch (e) {
+    container.innerHTML = `<p class="master-error">Ошибка загрузки. Попробуй позже.</p>`;
+    console.warn('Master tab error:', e);
+  }
+}
+
+/* ---- Экран заявок мастера ---- */
+async function _htmlMasterBookings() {
+  const res = await fetch('/api/master/bookings', {
+    headers: _masterAuthHeader(),
+  });
+
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+  const { bookings } = await res.json();
+
+  if (!bookings || bookings.length === 0) {
+    return `<p class="master-empty">Заявок пока нет</p>`;
+  }
+
+  const statusLabel = { pending: 'Ожидает', confirmed: 'Подтверждена', cancelled: 'Отменена' };
+  const statusClass = { pending: 'status--pending', confirmed: 'status--confirmed', cancelled: 'status--cancelled' };
+
+  return `
+    <div class="bookings-list">
+      ${bookings.map(b => `
+        <div class="booking-card" data-id="${b.id}">
+          <div class="booking-card__head">
+            <span class="booking-card__name">${b.client_name || 'Клиент'}</span>
+            <span class="booking-status ${statusClass[b.status] || ''}">${statusLabel[b.status] || b.status}</span>
+          </div>
+          <p class="booking-card__service">${b.service_title || '—'}</p>
+          ${b.preferred_date ? `<p class="booking-card__date">📅 ${b.preferred_date}</p>` : ''}
+          ${b.question ? `<p class="booking-card__question">"${b.question}"</p>` : ''}
+          ${b.status === 'pending' ? `
+            <div class="booking-card__actions">
+              <button class="btn-confirm" data-id="${b.id}">Подтвердить</button>
+              <button class="btn-cancel"  data-id="${b.id}">Отменить</button>
+              <button class="btn-delete"  data-id="${b.id}">🗑</button>
+            </div>
+          ` : ''}
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function _attachMasterBookingEvents(container) {
+  container.addEventListener('click', async e => {
+    const confirmBtn = e.target.closest('.btn-confirm');
+    const cancelBtn  = e.target.closest('.btn-cancel');
+    const deleteBtn  = e.target.closest('.btn-delete');
+
+    /* Удалить заявку */
+    if (deleteBtn) {
+      const id   = deleteBtn.dataset.id;
+      const card = container.querySelector(`.booking-card[data-id="${id}"]`);
+      deleteBtn.textContent = '...';
+      deleteBtn.disabled = true;
+      try {
+        const res = await fetch('/api/master/bookings', {
+          method:  'DELETE',
+          headers: { 'Content-Type': 'application/json', ..._masterAuthHeader() },
+          body:    JSON.stringify({ id }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        TG.haptic.success();
+        card?.remove();
+      } catch (err) {
+        deleteBtn.textContent = '🗑';
+        deleteBtn.disabled = false;
+        if (_sdk) _sdk.showAlert('Не удалось удалить заявку.');
+        else alert('Не удалось удалить заявку.');
+      }
+      return;
+    }
+
+    const btn = confirmBtn || cancelBtn;
+    if (!btn) return;
+
+    const id     = btn.dataset.id;
+    const status = confirmBtn ? 'confirmed' : 'cancelled';
+    btn.disabled = true;
+    btn.textContent = '...';
+
+    try {
+      const res = await fetch('/api/master/bookings', {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json', ..._masterAuthHeader() },
+        body:    JSON.stringify({ id, status }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      TG.haptic.success();
+      const card = container.querySelector(`.booking-card[data-id="${id}"]`);
+      if (card) {
+        const actionsEl = card.querySelector('.booking-card__actions');
+        const statusEl  = card.querySelector('.booking-status');
+        if (actionsEl) actionsEl.remove();
+        if (statusEl) {
+          statusEl.textContent = status === 'confirmed' ? 'Подтверждена' : 'Отменена';
+          statusEl.className   = `booking-status ${status === 'confirmed' ? 'status--confirmed' : 'status--cancelled'}`;
+        }
+      }
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = confirmBtn ? 'Подтвердить' : 'Отменить';
+      if (_sdk) _sdk.showAlert('Не удалось обновить статус. Попробуй ещё раз.');
+      else alert('Не удалось обновить статус.');
+    }
+  });
+}
+
+/* ---- Экран услуг мастера ---- */
+async function _htmlMasterServices() {
+  const res = await fetch('/api/master/services', {
+    headers: _masterAuthHeader(),
+  });
+
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+  const { services, plan } = await res.json();
+  const isFree     = !plan || plan === 'free';
+  const atLimit    = isFree && services && services.length >= 5;
+
+  const listHtml = (!services || services.length === 0)
+    ? `<p class="master-empty">Услуг пока нет</p>`
+    : `<div class="services-mgmt-list">
+        ${services.map(s => `
+          <div class="service-item" data-id="${s.id}">
+            <div class="service-item__thumb">
+              ${s.image_url
+                ? `<img src="${_esc(s.image_url)}" alt="${_esc(s.title)}" id="js-svc-thumb-${s.id}">`
+                : `<span class="service-item__thumb-placeholder" id="js-svc-thumb-${s.id}">🔮</span>`}
+            </div>
+            <div class="service-item__info">
+              <p class="service-item__title">${s.title}</p>
+              <p class="service-item__price">${s.price ? s.price + ' ₽' : '—'}</p>
+            </div>
+            <button class="service-item__photo-btn" data-id="${s.id}" title="Загрузить фото">📷</button>
+            <input type="file" class="service-item__photo-input" data-id="${s.id}" accept="image/*" style="display:none">
+            <button class="service-item__toggle ${s.is_active ? 'toggle--active' : 'toggle--hidden'}"
+                    data-id="${s.id}" data-active="${s.is_active ? '1' : '0'}">
+              ${s.is_active ? 'Скрыть' : 'Показать'}
+            </button>
+          </div>
+        `).join('')}
+      </div>`;
+
+  const addFormHtml = atLimit
+    ? `<div class="master-upgrade-note">
+        Бесплатный план ограничен 5 услугами.<br>Обновите план, чтобы добавить больше.
+      </div>`
+    : `<div class="add-service-form" id="js-add-service-form">
+        <p class="master-section-label">Добавить услугу</p>
+        <input class="master-input" id="js-new-service-title" type="text" placeholder="Название" maxlength="120">
+        <input class="master-input" id="js-new-service-price" type="number" placeholder="Цена (₽)" min="0">
+        <button class="master-btn" id="js-add-service-btn">+ Добавить</button>
+      </div>`;
+
+  return `${listHtml}${addFormHtml}`;
+}
+
+function _attachMasterServiceEvents(container) {
+  /* ---- Кнопка 📷 — открыть input для конкретной услуги ---- */
+  container.addEventListener('click', e => {
+    const photoBtn = e.target.closest('.service-item__photo-btn');
+    if (!photoBtn) return;
+    const id = photoBtn.dataset.id;
+    const input = container.querySelector(`.service-item__photo-input[data-id="${id}"]`);
+    input?.click();
+  });
+
+  /* ---- Загрузка фото услуги ---- */
+  container.addEventListener('change', async e => {
+    const input = e.target.closest('.service-item__photo-input');
+    if (!input) return;
+    const file = input.files?.[0];
+    if (!file) return;
+    const id = input.dataset.id;
+    const thumbEl = container.querySelector(`#js-svc-thumb-${id}`);
+    const prevHtml = thumbEl ? thumbEl.outerHTML : '';
+
+    if (thumbEl) thumbEl.replaceWith(Object.assign(document.createElement('span'), {
+      id: `js-svc-thumb-${id}`,
+      textContent: '⏳',
+      className: 'service-item__thumb-placeholder',
+    }));
+
+    try {
+      const uploadedUrl = await _uploadFile(file, 'service', id);
+      const newThumb = container.querySelector(`#js-svc-thumb-${id}`);
+      if (newThumb) {
+        const img = document.createElement('img');
+        img.src = uploadedUrl;
+        img.alt = 'service';
+        img.id = `js-svc-thumb-${id}`;
+        newThumb.replaceWith(img);
+      }
+      TG.haptic.success();
+    } catch (err) {
+      /* Восстановить предыдущее превью */
+      const newThumb = container.querySelector(`#js-svc-thumb-${id}`);
+      if (newThumb) newThumb.outerHTML = prevHtml;
+      console.warn('Service photo upload error:', err);
+      if (_sdk) _sdk.showAlert('Не удалось загрузить фото услуги: ' + err.message);
+      else alert('Не удалось загрузить фото услуги: ' + err.message);
+    }
+  });
+
+  /* Скрыть/показать услугу */
+  container.addEventListener('click', async e => {
+    const toggleBtn = e.target.closest('.service-item__toggle');
+    if (!toggleBtn) return;
+
+    const id       = toggleBtn.dataset.id;
+    const isActive = toggleBtn.dataset.active === '1';
+    toggleBtn.disabled = true;
+
+    try {
+      const res = await fetch('/api/master/services', {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json', ..._masterAuthHeader() },
+        body:    JSON.stringify({ id, is_active: !isActive }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      TG.haptic.success();
+      toggleBtn.dataset.active = isActive ? '0' : '1';
+      toggleBtn.textContent    = isActive ? 'Показать' : 'Скрыть';
+      toggleBtn.className      = `service-item__toggle ${isActive ? 'toggle--hidden' : 'toggle--active'}`;
+    } catch (e) {
+      console.warn('Service toggle error:', e);
+      toggleBtn.disabled = false;
+    }
+  });
+
+  /* Добавить услугу */
+  container.querySelector('#js-add-service-btn')?.addEventListener('click', async () => {
+    const titleInput = container.querySelector('#js-new-service-title');
+    const priceInput = container.querySelector('#js-new-service-price');
+    const title = titleInput?.value.trim();
+    const price = parseInt(priceInput?.value, 10) || 0;
+
+    if (!title) {
+      titleInput?.focus();
+      return;
+    }
+
+    const btn = container.querySelector('#js-add-service-btn');
+    btn.disabled     = true;
+    btn.textContent  = '...';
+
+    try {
+      const res = await fetch('/api/master/services', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', ..._masterAuthHeader() },
+        body:    JSON.stringify({ title, price }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      TG.haptic.success();
+      /* Перерендерить список */
+      const contentEl = document.querySelector('#js-master-content');
+      if (contentEl) _renderMasterTab(contentEl, 'services');
+    } catch (e) {
+      console.warn('Add service error:', e);
+      btn.disabled    = false;
+      btn.textContent = '+ Добавить';
+      if (_sdk) _sdk.showAlert('Не удалось добавить услугу.');
+      else alert('Не удалось добавить услугу.');
+    }
+  });
+}
+
+/* ---- Экран профиля мастера ---- */
+function _htmlMasterProfile() {
+  const d = window._masterData || {};
+  return `
+    <div class="master-form" id="js-master-profile-form">
+      <p class="master-section-label">Редактировать профиль</p>
+
+      <div class="upload-section">
+        <div class="upload-item">
+          <p class="upload-label">Фото профиля</p>
+          <div class="upload-preview" id="js-avatar-preview">
+            ${d.avatar_url
+              ? `<img src="${_esc(d.avatar_url)}" alt="avatar">`
+              : `<span class="upload-placeholder">👤</span>`}
+          </div>
+          <label class="upload-btn" for="js-avatar-input">Загрузить фото</label>
+          <p class="upload-hint">JPG/PNG · 400×400px</p>
+          <input type="file" id="js-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none">
+        </div>
+        <div class="upload-item">
+          <p class="upload-label">Фон приложения</p>
+          <div class="upload-preview upload-preview--rect" id="js-bg-preview">
+            ${d.bg_url
+              ? `<img src="${_esc(d.bg_url)}" alt="bg">`
+              : `<span class="upload-placeholder">🖼</span>`}
+          </div>
+          <label class="upload-btn" for="js-bg-input">Загрузить фон</label>
+          <p class="upload-hint">JPG/PNG · 1080×1920px</p>
+          <input type="file" id="js-bg-input" accept="image/jpeg,image/png,image/webp" style="display:none">
+        </div>
+      </div>
+
+      <label class="master-form__label">Имя</label>
+      <input class="master-input" id="js-profile-name" type="text" value="${_esc(d.name || '')}" maxlength="100">
+
+      <label class="master-form__label">О себе (bio)</label>
+      <textarea class="master-textarea" id="js-profile-bio" rows="4" maxlength="500">${_esc(d.bio || '')}</textarea>
+
+      <label class="master-form__label">Telegram канал / ссылка</label>
+      <input class="master-input" id="js-profile-channel" type="url" value="${_esc(d.channel_url || '')}" placeholder="https://t.me/...">
+
+      <label class="master-form__label">WhatsApp (номер или ссылка)</label>
+      <input class="master-input" id="js-profile-wa" type="text" value="${_esc(d.whatsapp || '')}" placeholder="+7...">
+
+      <button class="master-btn" id="js-profile-save">Сохранить</button>
+    </div>
+  `;
+}
+
+/* Вспомогательная функция: читает файл как base64 и загружает через API */
+/* Сжать изображение через Canvas перед отправкой */
+function _compressImage(file, maxW, maxH, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Не удалось прочитать файл'));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Не удалось загрузить изображение'));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxW || height > maxH) {
+          const ratio = Math.min(maxW / width, maxH / height);
+          width  = Math.round(width  * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width  = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function _uploadFile(file, type, serviceId) {
+  /* Размеры сжатия по типу */
+  const dims = type === 'avatar'  ? [400,  400]  :
+               type === 'bg'      ? [1200, 900]  :
+                                    [800,  800];
+  const base64 = await _compressImage(file, dims[0], dims[1]);
+
+  const url = serviceId
+    ? `/api/master/upload?type=${type}&serviceId=${serviceId}`
+    : `/api/master/upload?type=${type}`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ..._masterAuthHeader() },
+    body: JSON.stringify({ file: base64, fileName: 'photo.jpg' }),
+  });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `HTTP ${res.status}`);
+  }
+  const { url: uploadedUrl } = await res.json();
+  return uploadedUrl;
+}
+
+/* Показать спиннер в превью */
+function _setPreviewLoading(previewEl, on) {
+  if (on) {
+    previewEl.dataset.prevContent = previewEl.innerHTML;
+    previewEl.innerHTML = '<span class="upload-spinner">⏳</span>';
+  } else {
+    if (previewEl.dataset.prevContent !== undefined) {
+      previewEl.innerHTML = previewEl.dataset.prevContent;
+      delete previewEl.dataset.prevContent;
+    }
+  }
+}
+
+function _attachMasterProfileEvents(container) {
+  /* ---- Загрузка аватара ---- */
+  container.querySelector('#js-avatar-input')?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const previewEl = container.querySelector('#js-avatar-preview');
+    _setPreviewLoading(previewEl, true);
+    try {
+      const uploadedUrl = await _uploadFile(file, 'avatar');
+      previewEl.innerHTML = `<img src="${uploadedUrl}" alt="avatar">`;
+      if (window._masterData) window._masterData.avatar_url = uploadedUrl;
+      /* Обновить ANA.avatar */
+      ANA.avatar = uploadedUrl;
+      TG.haptic.success();
+    } catch (err) {
+      _setPreviewLoading(previewEl, false);
+      console.warn('Avatar upload error:', err);
+      if (_sdk) _sdk.showAlert('Не удалось загрузить фото: ' + err.message);
+      else alert('Не удалось загрузить фото: ' + err.message);
+    } finally {
+      e.target.value = '';
+    }
+  });
+
+  /* ---- Загрузка фона ---- */
+  container.querySelector('#js-bg-input')?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    const previewEl = document.getElementById('js-bg-preview');
+    if (previewEl) previewEl.innerHTML = '<span style="font-size:24px;line-height:80px">⏳</span>';
+    try {
+      /* Читаем файл */
+      const dataUrl = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload  = ev => res(ev.target.result);
+        r.onerror = () => rej(new Error('Ошибка чтения файла'));
+        r.readAsDataURL(file);
+      });
+      /* Сжимаем через Canvas до 1200×900 */
+      const compressed = await new Promise((res, rej) => {
+        const img = new Image();
+        img.onerror = () => rej(new Error('Ошибка загрузки изображения'));
+        img.onload  = () => {
+          try {
+            const MAX_W = 1080, MAX_H = 1920;
+            let w = img.width, h = img.height;
+            if (w > MAX_W || h > MAX_H) {
+              const r = Math.min(MAX_W / w, MAX_H / h);
+              w = Math.round(w * r); h = Math.round(h * r);
+            }
+            const c = document.createElement('canvas');
+            c.width = w; c.height = h;
+            c.getContext('2d').drawImage(img, 0, 0, w, h);
+            res(c.toDataURL('image/jpeg', 0.82));
+          } catch(ex) { rej(ex); }
+        };
+        img.src = dataUrl;
+      });
+      /* Отправляем */
+      const apiRes = await fetch('/api/master/upload?type=bg', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ..._masterAuthHeader() },
+        body: JSON.stringify({ file: compressed, fileName: 'bg.jpg' }),
+      });
+      if (!apiRes.ok) {
+        const d = await apiRes.json().catch(() => ({}));
+        throw new Error(d.error || `HTTP ${apiRes.status}`);
+      }
+      const { url } = await apiRes.json();
+      if (previewEl) previewEl.innerHTML = `<img src="${url}" alt="bg">`;
+      if (window._masterData) window._masterData.bg_url = url;
+      document.documentElement.style.setProperty('--bg-image', `url('${url}')`);
+      TG.haptic.success();
+    } catch (err) {
+      if (previewEl) previewEl.innerHTML = '<span class="upload-placeholder">🖼</span>';
+      const msg = 'Не удалось загрузить фон: ' + (err.message || 'неизвестная ошибка');
+      if (_sdk) _sdk.showAlert(msg); else alert(msg);
+    }
+  });
+
+  container.querySelector('#js-profile-save')?.addEventListener('click', async () => {
+    const btn = container.querySelector('#js-profile-save');
+    btn.disabled    = true;
+    btn.textContent = '...';
+
+    const body = {
+      name:        container.querySelector('#js-profile-name')?.value.trim()    || '',
+      bio:         container.querySelector('#js-profile-bio')?.value.trim()     || '',
+      channel_url: container.querySelector('#js-profile-channel')?.value.trim() || '',
+      whatsapp:    container.querySelector('#js-profile-wa')?.value.trim()      || '',
+    };
+
+    try {
+      const res = await fetch('/api/master/me', {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json', ..._masterAuthHeader() },
+        body:    JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      /* Обновить кэш */
+      if (window._masterData) Object.assign(window._masterData, body);
+      /* Обновить ANA */
+      if (body.name)        ANA.name       = body.name;
+      if (body.bio)         ANA.bio        = body.bio;
+      if (body.channel_url) ANA.channelUrl = body.channel_url;
+      if (body.whatsapp)    ANA.whatsapp   = body.whatsapp;
+
+      TG.haptic.success();
+      btn.textContent = 'Сохранено ✓';
+      setTimeout(() => {
+        btn.disabled    = false;
+        btn.textContent = 'Сохранить';
+      }, 2000);
+    } catch (e) {
+      console.warn('Profile save error:', e);
+      btn.disabled    = false;
+      btn.textContent = 'Сохранить';
+      if (_sdk) _sdk.showAlert('Не удалось сохранить профиль.');
+      else alert('Не удалось сохранить профиль.');
+    }
+  });
+}
+
+/* Экранирование HTML-спецсимволов в атрибутах */
+function _esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/* =====================================================
+   6. ОФФЕР-МОДАЛКА (показывается один раз)
    ===================================================== */
 
 const ONBOARD_KEY = 'ana_onboard_shown';
@@ -931,13 +1556,25 @@ async function loadMasterData() {
         testimonial:       s.testimonial       || '',
         testimonialAuthor: s.testimonial_author || '',
         price:             s.price,
-        image:             s.image_url         || `img/${s.id}.png`,
+        image:             s.image_url         || null,
         gradient:          s.gradient          || 'linear-gradient(135deg, #4c1d95 0%, #3730a3 100%)',
       }));
     }
 
     /* Сохранить slug для отправки заявок */
     window._masterSlug = masterSlug;
+
+    /* Сохранить данные мастера (включая telegram_id для проверки прав) */
+    window._masterData = {
+      telegram_id:  master.telegram_id  || null,
+      name:         master.name         || ANA.name,
+      bio:          master.bio          || ANA.bio,
+      channel_url:  master.channel_url  || ANA.channelUrl,
+      whatsapp:     master.whatsapp     || ANA.whatsapp,
+      plan:         master.plan         || 'free',
+      avatar_url:   master.avatar_url   || null,
+      bg_url:       master.bg_url       || null,
+    };
 
   } catch (e) {
     console.warn('API недоступен, используем статические данные:', e.message);
@@ -949,6 +1586,11 @@ async function init() {
 
   /* Загрузить данные мастера из API (или использовать data.js) */
   await loadMasterData();
+
+  /* Показать вкладку «Мастер» если пользователь = владелец страницы */
+  if (checkIsMaster()) {
+    document.querySelector('[data-tab="master"]')?.classList.remove('hidden');
+  }
 
   navigate('home');
   initBottomNav();

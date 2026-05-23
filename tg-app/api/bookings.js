@@ -44,6 +44,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'masterSlug и question обязательны' });
   }
 
+  // Минимальная длина вопроса — защита от случайных/тестовых заявок
+  if (question.trim().length < 20) {
+    return res.status(400).json({ error: 'Пожалуйста, опишите свой вопрос подробнее (минимум 20 символов)' });
+  }
+
   // Найти мастера по slug
   const { data: master } = await supabase
     .from('masters')
@@ -52,6 +57,21 @@ export default async function handler(req, res) {
     .single();
 
   if (!master) return res.status(404).json({ error: 'Мастер не найден' });
+
+  // Защита от спама: не более 1 заявки от одного клиента за час
+  if (clientTgId) {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count } = await supabase
+      .from('bookings')
+      .select('id', { count: 'exact', head: true })
+      .eq('master_id', master.id)
+      .eq('client_tg_id', clientTgId)
+      .gte('created_at', oneHourAgo);
+
+    if (count >= 1) {
+      return res.status(429).json({ error: 'Слишком много заявок. Попробуй через час.' });
+    }
+  }
 
   // Сохранить заявку в БД
   const { data: booking, error } = await supabase

@@ -66,7 +66,7 @@ body {
 
   /* ===== ФОНОВАЯ КАРТИНКА ===== */
   background-color: #08051a;
-  background-image: url('../img/bg_mini_app1.png?v=2');
+  background-image: var(--bg-image, url('../img/bg_mini_app1.png?v=2'));
   background-size: cover;
   background-position: center top;
   background-attachment: fixed;
@@ -368,6 +368,21 @@ textarea, input {
 .portfolio-card:active {
   transform: scale(0.94);
   opacity: 0.85;
+}
+
+.portfolio-card__gradient {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.portfolio-card__emoji {
+  font-size: 44px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4));
 }
 
 .portfolio-card img {
@@ -727,6 +742,21 @@ textarea, input {
   padding-bottom: 100px;
 }
 
+.confirm-back-btn {
+  display: none; /* показывается только в браузере через JS */
+  padding: 14px 32px;
+  border-radius: 50px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  width: auto;
+  align-self: center;
+}
+.confirm-back-btn:active { opacity: 0.8; }
+
 .confirm-body {
   width: 100%;
   display: flex;
@@ -761,13 +791,14 @@ textarea, input {
 }
 
 .next-steps {
-  width: 100%;
+  width: 88%;
+  max-width: 320px;
   background: rgba(255,255,255,0.12);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(255,255,255,0.2);
   border-radius: var(--r-lg);
-  padding: 16px;
+  padding: 16px 20px;
   text-align: left;
   animation: rise 0.4s ease 0.32s both;
 }
@@ -971,9 +1002,517 @@ textarea, input {
 }
 
 /* =====================================================
+   ПАНЕЛЬ МАСТЕРА
+   ===================================================== */
+
+.master-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+
+.master-panel__header {
+  padding: 24px 16px 12px;
+  background: rgba(8, 5, 26, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.master-panel__title {
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.master-panel__sub {
+  font-size: var(--fs-sm);
+  color: rgba(255,255,255,0.5);
+  margin-top: 2px;
+}
+
+/* ---- Переключатель вкладок ---- */
+.master-tabs {
+  display: flex;
+  gap: 0;
+  background: rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.master-tab {
+  flex: 1;
+  padding: 12px 8px;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: rgba(255,255,255,0.45);
+  text-align: center;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  min-height: 44px;
+}
+
+.master-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.master-tab:active {
+  opacity: 0.7;
+}
+
+/* ---- Контентная область ---- */
+.master-content {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.master-loading {
+  text-align: center;
+  padding: 40px 16px;
+  color: rgba(255,255,255,0.4);
+  font-size: var(--fs-sm);
+}
+
+.master-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: rgba(255,255,255,0.4);
+  font-size: var(--fs-sm);
+}
+
+.master-error {
+  text-align: center;
+  padding: 24px 16px;
+  color: #f87171;
+  font-size: var(--fs-sm);
+}
+
+.master-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 10px;
+}
+
+/* ---- Список заявок ---- */
+.bookings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.booking-card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--r-md);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.booking-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.booking-card__name {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+}
+
+.booking-status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--r-full);
+}
+
+.status--pending {
+  background: rgba(251,191,36,0.2);
+  color: #fbbf24;
+}
+
+.status--confirmed {
+  background: rgba(52,211,153,0.2);
+  color: #34d399;
+}
+
+.status--cancelled {
+  background: rgba(248,113,113,0.2);
+  color: #f87171;
+}
+
+.booking-card__service {
+  font-size: var(--fs-sm);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.booking-card__date {
+  font-size: var(--fs-xs);
+  color: rgba(255,255,255,0.5);
+}
+
+.booking-card__question {
+  font-size: var(--fs-sm);
+  color: rgba(255,255,255,0.7);
+  font-style: italic;
+  line-height: 1.5;
+  background: rgba(255,255,255,0.04);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+}
+
+.booking-card__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn-confirm,
+.btn-cancel {
+  flex: 1;
+  min-height: 36px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  transition: opacity 0.1s, transform 0.1s;
+}
+
+.btn-confirm {
+  background: rgba(52,211,153,0.2);
+  color: #34d399;
+  border: 1px solid rgba(52,211,153,0.3);
+}
+
+.btn-cancel {
+  background: rgba(248,113,113,0.15);
+  color: #f87171;
+  border: 1px solid rgba(248,113,113,0.25);
+}
+
+.btn-confirm:active,
+.btn-cancel:active {
+  opacity: 0.7;
+  transform: scale(0.97);
+}
+
+.btn-confirm:disabled,
+.btn-cancel:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.btn-delete {
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 16px;
+  background: rgba(239,68,68,0.15);
+  color: #f87171;
+  border: 1px solid rgba(239,68,68,0.3);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.btn-delete:active { opacity: 0.7; }
+.btn-delete:disabled { opacity: 0.4; pointer-events: none; }
+
+/* ---- Список услуг мастера ---- */
+.services-mgmt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.service-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+}
+
+.service-item__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.service-item__title {
+  font-size: var(--fs-md);
+  font-weight: 500;
+  color: rgba(255,255,255,0.9);
+  line-height: 1.25;
+}
+
+.service-item__price {
+  font-size: var(--fs-xs);
+  color: rgba(255,255,255,0.45);
+  margin-top: 2px;
+}
+
+.service-item__toggle {
+  flex-shrink: 0;
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: var(--r-full);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  transition: opacity 0.1s;
+}
+
+.toggle--active {
+  background: rgba(248,113,113,0.15);
+  color: #f87171;
+  border: 1px solid rgba(248,113,113,0.25);
+}
+
+.toggle--hidden {
+  background: rgba(52,211,153,0.15);
+  color: #34d399;
+  border: 1px solid rgba(52,211,153,0.25);
+}
+
+.service-item__toggle:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* ---- Форма добавления услуги ---- */
+.add-service-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--r-md);
+  padding: 14px;
+}
+
+.master-upgrade-note {
+  background: rgba(251,191,36,0.1);
+  border: 1px solid rgba(251,191,36,0.2);
+  border-radius: var(--r-md);
+  padding: 14px;
+  font-size: var(--fs-sm);
+  color: #fbbf24;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ---- Форма профиля ---- */
+.master-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.master-form__label {
+  font-size: var(--fs-sm);
+  color: rgba(255,255,255,0.6);
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+/* ---- Общие элементы форм мастера ---- */
+.master-input,
+.master-textarea {
+  width: 100%;
+  padding: 11px 14px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--r-md);
+  font-size: var(--fs-md);
+  color: #ffffff;
+  outline: none;
+  transition: border-color 0.15s;
+  min-height: 44px;
+}
+
+.master-input:focus,
+.master-textarea:focus {
+  border-color: var(--accent);
+}
+
+.master-input::placeholder,
+.master-textarea::placeholder {
+  color: rgba(255,255,255,0.35);
+}
+
+.master-textarea {
+  resize: none;
+  line-height: 1.55;
+  min-height: 100px;
+}
+
+.master-btn {
+  width: 100%;
+  min-height: 48px;
+  border-radius: var(--r-md);
+  background: var(--accent);
+  color: #ffffff;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  transition: opacity 0.1s, transform 0.1s;
+  margin-top: 4px;
+}
+
+.master-btn:active {
+  opacity: 0.82;
+  transform: scale(0.98);
+}
+
+.master-btn:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* ---- Загрузка фото — блок в профиле мастера ---- */
+.upload-section {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.upload-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.upload-label {
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+  text-align: center;
+}
+
+.upload-preview {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Прямоугольный превью для фона (не круглый) */
+.upload-preview--rect {
+  border-radius: var(--r-md);
+  width: 80px;
+  height: 60px;
+}
+
+.upload-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.upload-placeholder {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.upload-spinner {
+  font-size: 24px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.upload-hint {
+  font-size: 10px;
+  color: rgba(255,255,255,0.35);
+  text-align: center;
+  margin-top: 2px;
+}
+
+.upload-btn {
+  font-size: 12px;
+  color: #2AABEE;
+  cursor: pointer;
+  padding: 6px 12px;
+  border: 1px solid rgba(42,171,238,0.4);
+  border-radius: var(--r-full);
+  text-align: center;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.upload-btn:active {
+  background: rgba(42,171,238,0.15);
+}
+
+/* ---- Миниатюра услуги в списке мастера ---- */
+.service-item__thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.service-item__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.service-item__thumb-placeholder {
+  font-size: 22px;
+  line-height: 1;
+}
+
+/* ---- Кнопка 📷 у услуги ---- */
+.service-item__photo-btn {
+  flex-shrink: 0;
+  font-size: 18px;
+  padding: 4px;
+  min-height: 36px;
+  min-width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-sm);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: background 0.15s;
+}
+
+.service-item__photo-btn:active {
+  background: rgba(255,255,255,0.14);
+}
+
+/* =====================================================
    УТИЛИТЫ
    ===================================================== */
 .mt-auto { margin-top: auto; }
+.hidden  { display: none !important; }
 
 /* =====================================================
    ОФФЕР-МОДАЛКА
