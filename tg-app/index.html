@@ -18,6 +18,26 @@
   <!-- Корневой контейнер приложения. Экраны рендерятся сюда через app.js -->
   <div id="app"></div>
 
+  <!-- Нижнее меню — всегда в DOM, показывается/скрывается через JS -->
+  <nav id="bottom-nav" class="bottom-nav">
+    <button class="nav-tab active" data-tab="catalog">
+      <span class="nav-tab__icon">🔮</span>
+      <span class="nav-tab__label">Каталог</span>
+    </button>
+    <button class="nav-tab" data-tab="readings">
+      <span class="nav-tab__icon">✨</span>
+      <span class="nav-tab__label">Расклады</span>
+    </button>
+    <button class="nav-tab" data-tab="materials">
+      <span class="nav-tab__icon">📖</span>
+      <span class="nav-tab__label">Материалы</span>
+    </button>
+    <button class="nav-tab" data-tab="contact">
+      <span class="nav-tab__icon">💌</span>
+      <span class="nav-tab__label">Связаться</span>
+    </button>
+  </nav>
+
   <!-- Данные каталога (загружать до app.js) -->
   <script src="js/data.js"></script>
 

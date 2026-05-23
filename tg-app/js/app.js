@@ -130,26 +130,69 @@ const TG = {
    2. НАВИГАЦИЯ — стек экранов, анимации
    ===================================================== */
 
-let _navStack  = [];       // ['home', 'detail', 'booking']
+let _navStack   = [];      // ['home', 'detail', 'booking']
 let _curService = null;    // Выбранная услуга
 let _selDate    = null;    // Выбранная дата в форме
 let _animating  = false;   // Блокировка двойных нажатий
+let _activeTab  = 'catalog'; // Активная вкладка нижнего меню
+let _homeFilter = 'all';   // Фильтр для home ('all'|'readings'|'materials')
+
+/* Экраны где видно нижнее меню */
+const TAB_SCREENS = ['home', 'contact'];
+
+/* Категория по вкладке */
+const TAB_FILTER = {
+  catalog:   'all',
+  readings:  'readings',
+  materials: 'materials',
+};
+
+/* Показать / скрыть нижнее меню */
+function showNav()  { document.getElementById('bottom-nav')?.classList.remove('bottom-nav--hidden'); }
+function hideNav()  { document.getElementById('bottom-nav')?.classList.add('bottom-nav--hidden'); }
+
+/* Переключить активную вкладку */
+function setActiveTab(tab) {
+  _activeTab = tab;
+  document.querySelectorAll('.nav-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+}
 
 function navigate(name, service) {
   if (_animating) return;
 
   if (service !== undefined) _curService = service;
 
-  const direction = 'forward';
   _navStack.push(name);
-  _transition(name, direction);
+  _transition(name, 'forward');
 
-  /* BackButton — показывать когда есть куда вернуться */
-  if (_navStack.length > 1) {
-    TG.bb.show(_goBack);
-  } else {
+  /* Нижнее меню видно только на корневых вкладках */
+  if (TAB_SCREENS.includes(name)) {
+    showNav();
     TG.bb.hide();
+  } else {
+    hideNav();
+    TG.bb.show(_goBack);
   }
+}
+
+/* Переключение вкладки (fade без истории) */
+function switchTab(tab) {
+  if (_animating) return;
+  setActiveTab(tab);
+
+  if (tab === 'contact') {
+    _navStack = ['contact'];
+    _transition('contact', 'fade');
+  } else {
+    _homeFilter = TAB_FILTER[tab] || 'all';
+    _navStack = ['home'];
+    _transition('home', 'fade');
+  }
+
+  showNav();
+  TG.bb.hide();
 }
 
 function _goBack() {
@@ -176,6 +219,29 @@ function _transition(name, direction) {
     app.appendChild(newEl);
     _animating = false;
     window.scrollTo(0, 0);
+    return;
+  }
+
+  /* fade — для переключения вкладок (без сдвига) */
+  if (direction === 'fade') {
+    newEl.style.opacity = '0';
+    oldEl.classList.add('screen--exit');
+    app.appendChild(newEl);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        newEl.style.transition = 'opacity 0.18s ease';
+        oldEl.style.transition = 'opacity 0.18s ease';
+        newEl.style.opacity = '1';
+        oldEl.style.opacity = '0';
+        setTimeout(() => {
+          oldEl.remove();
+          newEl.style.transition = '';
+          newEl.style.opacity = '';
+          _animating = false;
+          window.scrollTo(0, 0);
+        }, 200);
+      });
+    });
     return;
   }
 
@@ -229,10 +295,11 @@ function _buildScreen(name) {
   el.dataset.screen = name;
 
   switch (name) {
-    case 'home':         el.innerHTML = _htmlHome();            break;
-    case 'detail':       el.innerHTML = _htmlDetail();          break;
-    case 'booking':      el.innerHTML = _htmlBooking();         break;
-    case 'confirmation': el.innerHTML = _htmlConfirmation();    break;
+    case 'home':         el.innerHTML = _htmlHome();         break;
+    case 'detail':       el.innerHTML = _htmlDetail();        break;
+    case 'booking':      el.innerHTML = _htmlBooking();       break;
+    case 'confirmation': el.innerHTML = _htmlConfirmation();  break;
+    case 'contact':      el.innerHTML = _htmlContact();       break;
     default:
       el.innerHTML = `<p style="padding:24px;color:var(--hint)">Неизвестный экран</p>`;
   }
@@ -274,7 +341,7 @@ function _htmlHome() {
       <div class="home-section">
         <p class="home-section__title">Расклады и материалы</p>
         <div class="portfolio-grid" id="js-portfolio">
-          ${SERVICES.map(s => `
+          ${filterServices(_homeFilter).map(s => `
             <button class="portfolio-card" data-id="${s.id}" aria-label="${s.title}">
               <img src="${s.image}" alt="${s.title}" loading="lazy">
             </button>
@@ -286,7 +353,7 @@ function _htmlHome() {
       <div class="home-section" style="margin-top:20px;">
         <p class="home-section__title">Услуги</p>
         <div class="services-list" id="js-services-list">
-          ${SERVICES.map(s => `
+          ${filterServices(_homeFilter).map(s => `
             <button class="service-row" data-id="${s.id}" aria-label="${s.title}">
               <div class="service-row__icon"><img src="${s.icon}" alt="${s.title}"></div>
               <div class="service-row__info">
@@ -426,6 +493,57 @@ function _htmlBooking() {
   `;
 }
 
+/* ---- Экран 5: Связаться ---- */
+function _htmlContact() {
+  return `
+    <div class="contact-screen">
+      <div class="contact-avatar">
+        <img src="img/ana.jpg" alt="Ana Krista">
+      </div>
+      <h2 class="contact-title">Ana Krista Goyya</h2>
+      <p class="contact-subtitle">Таролог с 10-летним опытом<br>Онлайн · По всему миру</p>
+
+      <div class="contact-buttons">
+        <button class="contact-btn" id="js-contact-tg">
+          <span class="contact-btn__icon">✈️</span>
+          <span class="contact-btn__text">
+            <span class="contact-btn__title">Написать в Telegram</span>
+            <span class="contact-btn__sub">@Ana_Krista</span>
+          </span>
+        </button>
+        <button class="contact-btn" id="js-contact-wa">
+          <span class="contact-btn__icon">💬</span>
+          <span class="contact-btn__text">
+            <span class="contact-btn__title">Написать в WhatsApp</span>
+            <span class="contact-btn__sub">+1 317 752 03 69</span>
+          </span>
+        </button>
+      </div>
+
+      <div class="contact-info">
+        ${ANA.bio}
+      </div>
+
+      <button class="main-btn" id="js-main-btn" style="display:none"></button>
+    </div>
+  `;
+}
+
+function _evContact(el) {
+  TG.mb.hide();
+
+  el.querySelector('#js-contact-tg')?.addEventListener('click', () => {
+    TG.haptic.light();
+    if (_sdk) _sdk.openTelegramLink(ANA.channelUrl);
+    else window.open(ANA.channelUrl, '_blank');
+  });
+
+  el.querySelector('#js-contact-wa')?.addEventListener('click', () => {
+    TG.haptic.light();
+    window.open(ANA.whatsapp, '_blank');
+  });
+}
+
 /* ---- Экран 4: Подтверждение ---- */
 function _htmlConfirmation() {
   const s = _curService;
@@ -470,6 +588,7 @@ function _attachEvents(el, name) {
     case 'detail':       _evDetail(el);       break;
     case 'booking':      _evBooking(el);      break;
     case 'confirmation': _evConfirmation(el); break;
+    case 'contact':      _evContact(el);      break;
   }
 }
 
@@ -614,23 +733,22 @@ async function _submitBooking() {
   TG.mb.loading(true);
   TG.haptic.medium();
 
-  /* Отправить данные на webhook — бот пришлёт уведомление Ане и подтверждение клиенту */
+  /* Отправить заявку в API (сохраняет в БД + уведомления) */
   try {
-    await fetch('/api/webhook', {
+    await fetch('/api/bookings', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        type:         'booking',
-        userId:       TG.user?.id       || null,
-        userName:     TG.user?.first_name || null,
-        serviceId:    _curService?.id,
-        serviceTitle: _curService?.title,
+        masterSlug:    window._masterSlug || 'ana-krista',
+        serviceId:     _curService?.id,
+        serviceTitle:  _curService?.title,
+        clientTgId:    TG.user?.id        || null,
+        clientName:    TG.user?.first_name || null,
         question,
-        date: _selDate,
+        preferredDate: _selDate,
       }),
     });
   } catch (e) {
-    /* Не блокируем флоу если сеть недоступна */
     console.warn('Booking send error:', e);
   }
 
@@ -755,9 +873,86 @@ function showOffer() {
    6. ЗАПУСК
    ===================================================== */
 
-function init() {
+function initBottomNav() {
+  document.getElementById('bottom-nav')?.addEventListener('click', e => {
+    const tab = e.target.closest('.nav-tab')?.dataset.tab;
+    if (!tab || tab === _activeTab) return;
+    TG.haptic.select();
+    switchTab(tab);
+  });
+}
+
+/* =====================================================
+   ЗАГРУЗКА ДАННЫХ ИЗ API
+   Заменяет статический data.js при наличии Supabase.
+   Fallback — данные из data.js (работает всегда).
+   ===================================================== */
+
+async function loadMasterData() {
+  /* Определяем slug мастера:
+     1. Из параметра start_param (t.me/Bot?start=ana-krista)
+     2. Из URL ?master=ana-krista
+     3. Fallback — 'ana-krista' */
+  const startParam = _sdk?.initDataUnsafe?.start_param || '';
+  const urlParam   = new URLSearchParams(window.location.search).get('master');
+  const masterSlug = startParam || urlParam || 'ana-krista';
+
+  try {
+    const res  = await fetch(`/api/masters/${masterSlug}`);
+    if (!res.ok) return; // fallback на data.js
+
+    const { master, services } = await res.json();
+    if (!master) return;
+
+    /* Обновить глобальный объект ANA */
+    ANA.name        = master.name        || ANA.name;
+    ANA.bio         = master.bio         || ANA.bio;
+    ANA.meta        = master.meta        || ANA.meta;
+    ANA.stats       = master.stats       || ANA.stats;
+    ANA.channelUrl  = master.channel_url || ANA.channelUrl;
+    ANA.whatsapp    = master.whatsapp    || ANA.whatsapp;
+    ANA.channel     = master.channel_url ? `🔮 ${master.channel_url.replace('https://t.me/', '@')}` : ANA.channel;
+    if (master.avatar_url) ANA.avatar = master.avatar_url;
+    if (master.bg_url)     document.documentElement.style.setProperty('--bg-image', `url('${master.bg_url}')`);
+    if (master.accent_color) document.documentElement.style.setProperty('--accent', master.accent_color);
+
+    /* Обновить глобальный массив SERVICES */
+    if (services && services.length > 0) {
+      SERVICES.length = 0; // очистить массив
+      services.forEach(s => SERVICES.push({
+        id:                s.id,
+        category:          s.category,
+        type:              s.type,
+        emoji:             s.emoji             || '🔮',
+        title:             s.title,
+        subtitle:          s.subtitle          || '',
+        desc:              s.description       || '',
+        includes:          Array.isArray(s.includes) ? s.includes : [],
+        testimonial:       s.testimonial       || '',
+        testimonialAuthor: s.testimonial_author || '',
+        price:             s.price,
+        image:             s.image_url         || `img/${s.id}.png`,
+        gradient:          s.gradient          || 'linear-gradient(135deg, #4c1d95 0%, #3730a3 100%)',
+      }));
+    }
+
+    /* Сохранить slug для отправки заявок */
+    window._masterSlug = masterSlug;
+
+  } catch (e) {
+    console.warn('API недоступен, используем статические данные:', e.message);
+  }
+}
+
+async function init() {
   TG.init();
+
+  /* Загрузить данные мастера из API (или использовать data.js) */
+  await loadMasterData();
+
   navigate('home');
+  initBottomNav();
+
   /* Онбординг при первом открытии, затем оффер */
   setTimeout(() => {
     if (!localStorage.getItem(ONBOARD_KEY)) {
